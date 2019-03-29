@@ -21,12 +21,14 @@
     </div>
     <div>
       <button @click="pluralize">Plural</button>
-      <span class="remove-item" @click="removeTodo(index)">&times;</span>
+      <span class="remove-item" @click="removeTodo(id)">&times;</span>
     </div>
   </div>
 </template>
 
 <script>
+import axios from "axios";
+
 export default {
   name: "todo-item",
   props: {
@@ -65,16 +67,15 @@ export default {
   },
   directives: {
     focus: {
-      // directive definition
       inserted: function(el) {
         el.focus();
       }
     }
   },
-
   methods: {
-    removeTodo(index) {
-      eventBus.$emit("removedTodo", index);
+    removeTodo(id) {
+      console.log("todoitem removetodo", id);
+      this.$store.dispatch("deleteTodo", id);
     },
     editTodo() {
       this.beforeEditCache = this.title;
@@ -84,15 +85,13 @@ export default {
       if (this.title.trim() == "") {
         this.title = this.beforeEditCache;
       }
+
       this.editing = false;
-      eventBus.$emit("finishedEdit", {
-        index: this.index,
-        todo: {
-          id: this.id,
-          title: this.title,
-          completed: this.completed,
-          editing: this.editing
-        }
+      this.$store.dispatch("updateTodo", {
+        id: this.id,
+        title: this.title,
+        completed: this.completed,
+        editing: this.editing
       });
     },
     cancelEdit() {
@@ -100,18 +99,18 @@ export default {
       this.editing = false;
     },
     pluralize() {
+      var config = {
+        headers: { Accept: "application/json" }
+      };
       eventBus.$emit("pluralize");
     },
     handlePluralize() {
       this.title = this.title + "s";
-      eventBus.$emit("finishedEdit", {
-        index: this.index,
-        todo: {
-          id: this.id,
-          title: this.title,
-          completed: this.completed,
-          editing: this.editing
-        }
+      this.$store.state.todos.splice(this.index, 1, {
+        id: this.id,
+        title: this.title,
+        completed: this.completed,
+        editing: this.editing
       });
     }
   }

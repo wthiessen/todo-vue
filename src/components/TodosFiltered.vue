@@ -9,16 +9,14 @@
 <script>
 export default {
   name: "todos-filtered",
-  data() {
-    return {
-      filter: "all"
-    };
+  computed: {
+    filter() {
+      return this.$store.state.filter;
+    }
   },
   methods: {
     changeFilter(filter) {
-      console.log(filter);
-      this.filter = filter;
-      eventBus.$emit("filterChanged", filter);
+      this.$store.dispatch("updateFilter", filter);
     }
   }
 };
