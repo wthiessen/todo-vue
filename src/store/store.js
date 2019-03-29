@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
 import axios from 'axios'
+import db from '../firebase'
 
 Vue.use(Vuex)
 axios.defaults.baseURL = 'http://localhost/api'
@@ -9,20 +10,7 @@ export const store = new Vuex.Store({
   state: {
     loading: true,
     filter: 'all',
-    todos: [
-      // {
-      //   id: 1,
-      //   title: 'Finish vue screencast',
-      //   completed: false,
-      //   editing: false
-      // },
-      // {
-      //   id: 2,
-      //   title: 'take over world',
-      //   completed: false,
-      //   editing: false
-      // }
-    ]
+    todos: []
   },
   getters: {
     remaining (state) {
@@ -83,76 +71,92 @@ export const store = new Vuex.Store({
   },
   actions: {
     addTodo (context, todo) {
-      axios
-        .post('http://localhost:8000/todos', {
+      db.collection('todos')
+        .add({
           title: todo.title,
-          completed: false
+          completed: false,
+          timestamp: new Date()
         })
-        .then(response => {
-          context.commit('addTodo', todo)
-        })
-        .catch(error => {
-          console.log(error)
+        .then(docRef => {
+          context.commit('addTodo', {
+            id: docRef.id,
+            title: todo.title,
+            completed: false
+          })
         })
     },
     updateTodo (context, todo) {
-      axios
-        .patch(`http://localhost:8000/todos/${todo.id}`, {
+      db.collection('todos')
+        .doc(todo.id)
+        .set({
+          id: todo.id,
           title: todo.title,
-          completed: todo.completed
+          completed: todo.completed,
+          timestamp: new Date()
         })
-        .then(response => {
+        .then(() => {
           context.commit('updateTodo', todo)
-        })
-        .catch(error => {
-          console.log(error)
         })
     },
     deleteTodo (context, id) {
-      axios
-        .delete(`http://localhost:8000/todos/${id}`)
-        .then(response => {
+      db.collection('todos')
+        .doc(id)
+        .delete()
+        .then(() => {
           context.commit('deleteTodo', id)
-        })
-        .catch(error => {
-          console.log(error)
         })
     },
     clearCompleted (context, checked) {
-      axios
-        .delete(`http://localhost:8000/todosDeleteCompleted`)
-        .then(response => {
-          context.commit('clearCompleted', checked)
-        })
-        .catch(error => {
-          console.log(error)
+      db.collection('todos')
+        .where('completed', '==', true)
+        .get()
+        .then(querySnapshot => {
+          querySnapshot.forEach(doc => {
+            doc.ref.delete().then(() => {
+              context.commit('clearCompleted')
+            })
+          })
         })
     },
     updateFilter (context, filter) {
       context.commit('updateFilter', filter)
     },
     checkAll (context, checked) {
-      axios
-        .patch(`http://localhost:8000/todosAllChecked`)
-        .then(response => {
-          context.commit('checkAll', checked)
-        })
-        .catch(error => {
-          console.log(error)
+      db.collection('todos')
+        .get()
+        .then(querySnapshot => {
+          querySnapshot.forEach(doc => {
+            doc.ref
+              .update({
+                completed: checked
+              })
+              .then(() => {
+                context.commit('checkAll', checked)
+              })
+          })
         })
     },
     retrieveTodos (context) {
       context.state.loading = true
-      console.log(context.state.loading)
-      axios
-        .get('http://localhost:8000/todos')
-        .then(response => {
-          context.commit('retrieveTodos', response.data)
+      db.collection('todos')
+        .get()
+        .then(querySnapshot => {
+          let tempTodos = []
+          querySnapshot.forEach(doc => {
+            const data = {
+              id: doc.id,
+              title: doc.data().title,
+              completed: doc.data().completed,
+              timestamp: doc.data().timestamp
+            }
+            tempTodos.push(data)
+          })
           context.state.loading = false
-          console.log(context.state.loading)
-        })
-        .catch(error => {
-          console.log(error)
+          const tempTodosSorted = tempTodos.sort((a, b) => {
+            return a.timestamp - b.timestamp
+          })
+
+          context.commit('retrieveTodos', tempTodosSorted)
         })
     }
   }
