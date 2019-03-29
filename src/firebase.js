@@ -2,7 +2,7 @@ import firebase from 'firebase'
 import 'firebase/firestore'
 
 const config = {
-  apiKey: 'AIzaSyBOP8FBalg586oiflqQG4y84RGAjlMQRQg',
+  apiKey: '',
   authDomain: 'todo-app-cc949.firebaseapp.com',
   databaseURL: 'https://todo-app-cc949.firebaseio.com',
   projectId: 'todo-app-cc949',
