@@ -7,6 +7,7 @@ axios.defaults.baseURL = 'http://localhost/api'
 
 export const store = new Vuex.Store({
   state: {
+    loading: true,
     filter: 'all',
     todos: [
       // {
@@ -141,10 +142,14 @@ export const store = new Vuex.Store({
         })
     },
     retrieveTodos (context) {
+      context.state.loading = true
+      console.log(context.state.loading)
       axios
         .get('http://localhost:8000/todos')
         .then(response => {
           context.commit('retrieveTodos', response.data)
+          context.state.loading = false
+          console.log(context.state.loading)
         })
         .catch(error => {
           console.log(error)
