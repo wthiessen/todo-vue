@@ -4,7 +4,6 @@ import axios from 'axios'
 import db from '../firebase'
 
 Vue.use(Vuex)
-axios.defaults.baseURL = 'http://localhost/api'
 
 export const store = new Vuex.Store({
   state: {
@@ -39,6 +38,7 @@ export const store = new Vuex.Store({
         id: todo.id,
         title: todo.title,
         completed: false,
+        timestamp: new Date(),
         editing: false
       })
     },
@@ -53,7 +53,7 @@ export const store = new Vuex.Store({
     },
     deleteTodo (state, id) {
       const index = state.todos.findIndex(item => item.id == id)
-      state.todos.splice(index, 1)
+      if (index >= 0) { state.todos.splice(index, 1) }
     },
     clearCompleted (state) {
       state.todos = state.todos.filter(todo => !todo.completed)
@@ -62,7 +62,6 @@ export const store = new Vuex.Store({
       state.filter = filter
     },
     checkAll (state, checked) {
-      console.log('checked!!', checked)
       state.todos.forEach(todo => (todo.completed = checked))
     },
     retrieveTodos (state, todos) {
@@ -70,6 +69,32 @@ export const store = new Vuex.Store({
     }
   },
   actions: {
+    initRealtimeListeners (context) {
+      db.collection('todos').onSnapshot(snapshot => {
+        snapshot.docChanges().forEach(change => {
+          if (change.type === 'added') {
+            const source = change.doc.metadata.hasPendingWrites ? 'Local' : 'Server'
+            if (source === 'Server') {
+              context.commit('addTodo', {
+                id: change.doc.id,
+                title: change.doc.data().title,
+                completd: false
+              })
+            }
+          }
+          if (change.type === 'modified') {
+            context.commit('updateTodo', {
+              id: change.doc.id,
+              title: change.doc.data().title,
+              completed: change.doc.data().completed
+            })
+          }
+          if (change.type === 'removed') {
+            context.commit('deleteTodo', change.doc.id)
+          }
+        })
+      })
+    },
     addTodo (context, todo) {
       db.collection('todos')
         .add({
@@ -89,11 +114,11 @@ export const store = new Vuex.Store({
       db.collection('todos')
         .doc(todo.id)
         .set({
-          id: todo.id,
+          // id: todo.id,
           title: todo.title,
-          completed: todo.completed,
-          timestamp: new Date()
-        })
+          completed: todo.completed
+          // timestamp: new Date()
+        }, { merge: true })
         .then(() => {
           context.commit('updateTodo', todo)
         })

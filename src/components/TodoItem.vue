@@ -63,6 +63,10 @@ export default {
   watch: {
     checkAll() {
       this.completed = this.checkAll ? true : this.todo.completed;
+    },
+    todo() {
+      this.title = this.todo.title;
+      this.completed = this.todo.completed;
     }
   },
   directives: {
@@ -74,7 +78,6 @@ export default {
   },
   methods: {
     removeTodo(id) {
-      console.log("todoitem removetodo", id);
       this.$store.dispatch("deleteTodo", id);
     },
     editTodo() {
@@ -91,6 +94,7 @@ export default {
         id: this.id,
         title: this.title,
         completed: this.completed,
+        timestamp: this.timestamp,
         editing: this.editing
       });
     },
@@ -110,6 +114,7 @@ export default {
         id: this.id,
         title: this.title,
         completed: this.completed,
+        timestamp: this.timestamp,
         editing: this.editing
       });
     }
